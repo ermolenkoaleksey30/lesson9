@@ -5,37 +5,28 @@ import (
 	"time"
 )
 
-func main() {
-	chInt1 := make(chan int)
-	chInt2 := make(chan int, 2)
-
-	go func() {
-		var i int
-		for {
-			chInt1 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-	go func() {
-		var i int
-		for {
-			chInt2 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case val1 := <-chInt1:
-				fmt.Println("GO1", val1)
-			case val2 := <-chInt2:
-				fmt.Println("GO2", val2)
-			}
-		}
-	}()
-
+func Job(ch chan int) {
 	time.Sleep(5 * time.Second)
+	ch <- 42
+}
+
+func main() {
+	ch := make(chan int)
+
+	go Job(ch)
+	select {
+	case val1 := <-ch:
+		fmt.Println(val1)
+	case <-time.After(1 * time.Second):
+		return
+	}
+
+	go Job(ch)
+	timer := time.NewTimer(1 * time.Second)
+	select {
+	case <-ch:
+		timer.Stop()
+	case <-timer.C:
+		fmt.Println("timerC")
+	}
 }
