@@ -2,40 +2,31 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 func main() {
-	chInt1 := make(chan int)
-	chInt2 := make(chan int, 2)
+	chint := make(chan int)
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			chint <- 5 * 2
+		}(&wg)
+	}
+
+	go func(wg *sync.WaitGroup) {
+		wg.Wait()
+		close(chint)
+	}(&wg)
 
 	go func() {
-		var i int
-		for {
-			chInt1 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
+		for v := range chint {
+			fmt.Println(v)
 		}
 	}()
-	go func() {
-		var i int
-		for {
-			chInt2 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case val1 := <-chInt1:
-				fmt.Println("GO1", val1)
-			case val2 := <-chInt2:
-				fmt.Println("GO2", val2)
-			}
-		}
-	}()
-
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 }
