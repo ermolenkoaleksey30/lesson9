@@ -7,35 +7,43 @@ import (
 
 func main() {
 	chInt1 := make(chan int)
-	chInt2 := make(chan int, 2)
+	chInt2 := make(chan int)
+	chInt3 := make(chan int)
+	sliceChInt := []int{}
 
 	go func() {
-		var i int
 		for {
-			chInt1 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
+			chInt1 <- 1
 		}
 	}()
 	go func() {
-		var i int
 		for {
-			chInt2 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(2 * time.Second)
+			chInt2 <- 2
+		}
+	}()
+	go func() {
+		for {
+			time.Sleep(900 * time.Millisecond)
+			chInt3 <- 3
 		}
 	}()
 
 	go func() {
+
 		for {
 			select {
 			case val1 := <-chInt1:
-				fmt.Println("GO1", val1)
+				sliceChInt = append(sliceChInt, val1)
 			case val2 := <-chInt2:
-				fmt.Println("GO2", val2)
+				sliceChInt = append(sliceChInt, val2)
+			case val3 := <-chInt3:
+				sliceChInt = append(sliceChInt, val3)
 			}
 		}
 	}()
 
 	time.Sleep(5 * time.Second)
+	fmt.Println(sliceChInt)
 }
