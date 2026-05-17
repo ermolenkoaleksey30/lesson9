@@ -2,40 +2,31 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
+	"sync/atomic"
 )
 
+var num1 int
+var num2 atomic.Int64
+var mtx sync.Mutex
+
 func main() {
-	chInt1 := make(chan int)
-	chInt2 := make(chan int, 2)
+	wg := &sync.WaitGroup{}
 
-	go func() {
-		var i int
-		for {
-			chInt1 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-	go func() {
-		var i int
-		for {
-			chInt2 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		mtx.Lock()
+		num1 += 2
+		mtx.Unlock()
+	}(wg)
 
-	go func() {
-		for {
-			select {
-			case val1 := <-chInt1:
-				fmt.Println("GO1", val1)
-			case val2 := <-chInt2:
-				fmt.Println("GO2", val2)
-			}
-		}
-	}()
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		num2.Add(1)
+	}(wg)
 
-	time.Sleep(5 * time.Second)
+	wg.Wait()
+	fmt.Println(num1, num2.Load())
 }
