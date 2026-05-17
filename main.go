@@ -1,41 +1,28 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
 
 func main() {
-	chInt1 := make(chan int)
-	chInt2 := make(chan int, 2)
+	paretnContext, paretnContextCancle := context.WithTimeout(context.Background(), 5*time.Second)
+	defer paretnContextCancle()
 
-	go func() {
+	go func(ctx context.Context) {
 		var i int
-		for {
-			chInt1 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-	go func() {
-		var i int
-		for {
-			chInt2 <- i
-			i++
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-
-	go func() {
 		for {
 			select {
-			case val1 := <-chInt1:
-				fmt.Println("GO1", val1)
-			case val2 := <-chInt2:
-				fmt.Println("GO2", val2)
+			case <-ctx.Done():
+				return
+			default:
+				time.Sleep(200 * time.Millisecond)
+				fmt.Println(i)
+				i++
 			}
 		}
-	}()
+	}(paretnContext)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(8 * time.Second)
 }
